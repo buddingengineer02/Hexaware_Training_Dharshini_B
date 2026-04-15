@@ -1,2 +1,0 @@
-print("Dharshini")
-print("Chennai")
