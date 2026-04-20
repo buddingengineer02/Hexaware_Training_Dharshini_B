@@ -1,3 +1,14 @@
+#Python Capstone Project
+
+#E-Commerce Order Analytics System
+
+#Objective
+
+#Build a Python program that analyzes data from multiple sources:
+    #product catalog (JSON)
+    #customer orders (CSV)
+    #website visits (TXT)
+#The program should generate a sales and customer report.
 import csv
 import json
 # Part 1 — Website Visit Analysis (TXT)
