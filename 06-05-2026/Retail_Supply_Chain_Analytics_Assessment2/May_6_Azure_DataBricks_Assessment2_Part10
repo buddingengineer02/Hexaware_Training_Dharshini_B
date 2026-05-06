@@ -1,0 +1,137 @@
+import dlt
+from pyspark.sql.functions import col, sum, count, upper
+
+
+# 88. Create Bronze table using inline data
+@dlt.table(
+    name="bronze_orders",
+    comment="Raw ingested orders data - Bronze layer"
+)
+def bronze_orders():
+
+    data = [
+        (301,101,201,"2024-04-01",20,"Delivered"),
+        (302,102,201,"2024-04-01",35,"Delivered"),
+        (303,111,204,"2024-04-02",2,"Delivered"),
+        (304,114,208,"2024-04-02",5,"Pending"),
+        (305,115,204,"2024-04-03",3,"Delivered"),
+        (306,104,202,"2024-04-03",50,"Delivered"),
+        (307,105,202,"2024-04-04",18,"Cancelled"),
+        (308,117,206,"2024-04-04",7,"Delivered"),
+        (309,118,210,"2024-04-05",4,"Pending"),
+        (310,119,206,"2024-04-05",12,"Delivered")
+    ]
+
+    columns = [
+        "order_id",
+        "product_id",
+        "supplier_id",
+        "order_date",
+        "quantity",
+        "order_status"
+    ]
+
+    return spark.createDataFrame(data, columns)
+
+
+# 89. Create Silver cleaned table
+# 90. Add total revenue calculation
+# 91. Remove invalid records
+@dlt.table(
+    name="silver_orders_with_revenue",
+    comment="Cleaned orders with revenue calculation - Silver layer"
+)
+def silver_orders_with_revenue():
+
+    products_data = [
+        (101,"Groceries","Hyderabad",1200),
+        (102,"Groceries","Bengaluru",900),
+        (103,"Groceries","Mumbai",1800),
+        (104,"Dairy","Chennai",60),
+        (105,"Dairy","Delhi",450),
+        (106,"Personal Care","Kolkata",120),
+        (107,"Personal Care","Pune",320),
+        (108,"Personal Care","Ahmedabad",90),
+        (109,"Stationery","Hyderabad",75),
+        (110,"Stationery","Mumbai",110),
+        (111,"Electronics","Delhi",45000),
+        (112,"Electronics","Chennai",38000),
+        (113,"Electronics","Bengaluru",29000),
+        (114,"Electronics","Hyderabad",25000),
+        (115,"Electronics","Pune",62000),
+        (116,"Electronics","Mumbai",42000),
+        (117,"Home Appliances","Kolkata",3500),
+        (118,"Home Appliances","Delhi",12000),
+        (119,"Home Appliances","Ahmedabad",2800),
+        (120,"Home Appliances","Chennai",5500)
+    ]
+
+    products_df = spark.createDataFrame(
+        products_data,
+        ["product_id","category","warehouse_city","price"]
+    )
+
+    return (
+        dlt.read("bronze_orders")
+        .join(products_df, on="product_id", how="left")
+        .select(
+            col("order_id"),
+            col("product_id"),
+            col("supplier_id"),
+            col("order_date"),
+            col("quantity"),
+            upper(col("order_status")).alias("order_status"),
+            col("category"),
+            col("warehouse_city"),
+            col("price"),
+            (col("quantity") * col("price")).alias("total_revenue")
+        )
+        .filter(col("quantity") > 0)
+        .filter(col("order_status") != "Cancelled")
+    )
+
+
+# 92. Create Gold revenue by city
+@dlt.table(
+    name="gold_city_revenue",
+    comment="Revenue summary by city - Gold layer"
+)
+def gold_city_revenue():
+
+    df = dlt.read("silver_orders_with_revenue")
+
+    return df.groupBy(
+        "warehouse_city"
+    ).agg(
+        count("*").alias("total_orders"),
+        sum("quantity").alias("total_quantity"),
+        sum("total_revenue").alias("total_revenue")
+    )
+
+
+# 93. Create Gold revenue by category
+@dlt.table(
+    name="gold_category_revenue",
+    comment="Revenue summary by category - Gold layer"
+)
+def gold_category_revenue():
+
+    df = dlt.read("silver_orders_with_revenue")
+
+    return df.groupBy(
+        "category"
+    ).agg(
+        count("*").alias("total_orders"),
+        sum("quantity").alias("total_quantity"),
+        sum("total_revenue").alias("total_revenue")
+    )
+# 94. Run DLT pipeline.
+# 95. Verify target schema tables.
+%sql
+SELECT * FROM bronze_orders
+%sql
+SELECT * FROM silver_orders_with_revenue
+%sql
+SELECT * FROM gold_city_revenue
+%sql
+SELECT * FROM gold_category_revenue
