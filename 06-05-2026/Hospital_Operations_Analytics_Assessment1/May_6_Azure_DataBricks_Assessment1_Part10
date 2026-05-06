@@ -1,0 +1,140 @@
+import dlt
+from pyspark.sql.functions import col, sum as _sum, to_date
+
+
+# 88 Create Bronze table using inline patient visit data
+@dlt.table(
+    name = "bronze_patient_visits_final1"
+)
+
+def bronze_patient_visits_final1():
+
+    visits_data = [
+        (1,1001,201,"2024-03-01","Completed",2),
+        (2,1002,202,"2024-03-01","Completed",1),
+        (3,1003,203,"2024-03-02","Completed",3),
+        (4,1004,204,"2024-03-02","Pending",1),
+        (5,1005,206,"2024-03-03","Completed",2),
+        (6,1006,205,"2024-03-03","Completed",4),
+        (7,1007,207,"2024-03-04","Cancelled",1),
+        (8,1008,208,"2024-03-04","Completed",2),
+        (9,1009,201,"2024-03-05","Completed",1),
+        (10,1010,202,"2024-03-05","Completed",2),
+        (11,1011,205,"2024-03-06","Pending",3),
+        (12,1012,204,"2024-03-06","Completed",1),
+        (13,1013,203,"2024-03-07","Completed",2),
+        (14,1014,201,"2024-03-07","Completed",3),
+        (15,1015,210,"2024-03-08","Completed",1),
+        (16,1016,207,"2024-03-08","Cancelled",2),
+        (17,1017,209,"2024-03-09","Completed",4),
+        (18,1018,206,"2024-03-09","Completed",2),
+        (19,1019,209,"2024-03-10","Completed",3),
+        (20,1020,206,"2024-03-10","Pending",2),
+        (21,1001,205,"2024-03-11","Completed",3),
+        (22,1003,208,"2024-03-11","Completed",2),
+        (23,1006,201,"2024-03-12","Completed",1),
+        (24,1009,210,"2024-03-12","Completed",2),
+        (25,1014,202,"2024-03-13","Completed",1)
+    ]
+
+    visits_columns = [
+        "visit_id",
+        "patient_id",
+        "doctor_id",
+        "visit_date",
+        "visit_status",
+        "tests_count"
+    ]
+
+    return spark.createDataFrame(
+        visits_data,
+        visits_columns
+    )
+
+
+# 89 Create Silver table with cleaned fields
+# 90 Add total bill calculation in Silver
+# 91 Remove invalid records in Silver
+@dlt.table(
+    name = "silver_patient_visits_final1"
+)
+
+def silver_patient_visits_final1():
+
+    doctors_data = [
+        (201,"Cardiology","Hyderabad",1200),
+        (202,"Dermatology","Bengaluru",800),
+        (203,"Orthopedics","Mumbai",1500),
+        (204,"Pediatrics","Delhi",900),
+        (205,"Neurology","Hyderabad",2000),
+        (206,"Cardiology","Chennai",1300),
+        (207,"Dermatology","Kolkata",850),
+        (208,"Orthopedics","Bengaluru",1400),
+        (209,"Neurology","Kochi",1900),
+        (210,"General Medicine","Pune",700)
+    ]
+
+    doctors_df = spark.createDataFrame(
+        doctors_data,
+        [
+            "doctor_id",
+            "specialization",
+            "doctor_city",
+            "consultation_fee"
+        ]
+    )
+
+    return (
+        dlt.read("bronze_patient_visits_final1")
+        .withColumn(
+            "visit_date",
+            to_date("visit_date")
+        )
+        .join(
+            doctors_df,
+            "doctor_id"
+        )
+        .withColumn(
+            "test_cost",
+            col("tests_count") * 500
+        )
+        .withColumn(
+            "total_bill",
+            col("consultation_fee") + col("test_cost")
+        )
+        .filter(
+            col("visit_status") != "Cancelled"
+        )
+    )
+
+
+# 92 Create Gold table grouped by city
+@dlt.table(
+    name = "gold_city_revenue_final1"
+)
+
+def gold_city_revenue_final1():
+
+    return (
+        dlt.read("silver_patient_visits_final1")
+        .groupBy("doctor_city")
+        .agg(
+            _sum("total_bill").alias("total_revenue")
+        )
+    )
+
+
+# 93 Create Gold table grouped by specialization
+@dlt.table(
+    name = "gold_specialization_revenue_final1"
+)
+
+def gold_specialization_revenue_final1():
+
+    return (
+        dlt.read("silver_patient_visits_final1")
+        .groupBy("specialization")
+        .agg(
+            _sum("total_bill").alias("total_revenue")
+        )
+    )
