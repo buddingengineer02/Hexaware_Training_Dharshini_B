@@ -1,0 +1,11 @@
+order_id,supplier_id,product_name,stock_quantity,delivery_date
+1,101,Laptop,50,2026-05-01
+2,102,Mouse,20,2026-05-05
+3,103,Keyboard,15,2026-05-10
+4,104,Monitor,30,2026-05-07
+5,105,Printer,10,2026-05-03
+6,101,Scanner,18,2026-05-08
+7,102,Webcam,60,2026-05-09
+8,103,Speaker,35,2026-05-12
+9,104,Hard Disk,25,2026-05-06
+10,105,USB Drive,100,2026-05-11
