@@ -1,0 +1,9 @@
+order_id,customer_id,customer_name,city,product,order_date,delivery_date,status
+1,1,Arjun Kumar,Chennai,Laptop,2026-04-01,2026-04-05,Delivered
+2,2,Priya Sharma,Bangalore,Mouse,2026-04-03,2026-04-10,Delayed
+3,3,Ravi Mehta,Mumbai,Keyboard,2026-04-05,2026-04-08,Delivered
+4,4,Sneha Pillai,Hyderabad,Monitor,2026-04-07,2026-04-14,Delayed
+5,5,Karthik Rajan,Pune,Printer,2026-04-09,2026-04-12,In Transit
+6,1,Arjun Kumar,Chennai,Webcam,2026-04-11,2026-04-15,Delayed
+7,2,Priya Sharma,Bangalore,Speaker,2026-04-13,2026-04-16,Delivered
+8,3,Ravi Mehta,Mumbai,USB Drive,2026-04-15,2026-04-20,Delayed
